@@ -1,14 +1,25 @@
 # C Hardware Sprite API for Spectrum Next
 
 The **zxnext_sprite** project provides a C API for using the hardware sprites of
-ZX Spectrum Next as specified at https://www.specnext.com/sprites/. This API is
-a thin C wrapper on top of the I/O port interface of the hardware sprite system.
+ZX Spectrum Next as specified at https://wiki.specnext.dev/Sprites. This API is
+a thin C wrapper on top of the I/O port and Next register interface of the
+hardware sprite system.
+
+The API covers the sprite features of the current Spectrum Next core (3.x):
+
+* 128 sprites with 8-bit (256 colour) or 4-bit (16 colour) patterns
+* Sprite scaling 2x, 4x and 8x in each direction, mirroring and rotation
+* Relative sprites grouped under an anchor sprite (composite and unified)
+* Sprite clip window, sprite priority order and sprite transparency index
+* Random access to individual sprite attributes via Next registers
+* Two 9-bit RGB333 sprite palettes
+* Loading of sprite patterns and palettes from files using ESXDOS
+
+The original 4-byte sprite attribute functions are still available and work on
+all core versions.
 
 The [demo](demo) folder contains a simple example program demonstrating how to
 use this API.
-
-**Note:** This project still works but is a bit out-of-date. It will be updated
-someday when I have the time ;)
 
 ## Download
 
@@ -28,8 +39,13 @@ The zxnext_sprite_z88dk.zip archive contains a packaging of zxnext_sprite that
 can be installed directly into your z88dk installation for convenience, see the
 tip below.
 
-If you want to build the zxnext_sprite libraries yourself, see the "How to Build"
-section below.
+**Note:** A z88dk library can only be linked with the z88dk version it was built
+with (or a compatible one). The archives above are built with the latest z88dk
+nightly at the time of the release. If the linker complains about the library
+version, rebuild the library with your own z88dk installation as described in
+the "How to Build" section below. The libraries are also built by the GitHub
+Actions workflow of this repository and are available as workflow artifacts
+and release assets.
 
 ## API Documentation
 
@@ -46,20 +62,20 @@ For convenience, you can instead download
 your z88dk installation, see the tip below.
 
 2. Install the latest version of [z88dk](https://github.com/z88dk/z88dk) and
-the [ZEsarUX](https://github.com/chernandezba/zesarux) or
-[CSpect](https://dailly.blogspot.se/) emulator.
+the [ZEsarUX](https://github.com/chernandezba/zesarux/releases) or
+[CSpect](https://mdf200.itch.io/cspect) emulator.
 
-4. Read about how hardware sprites work in the "Hardware Sprites" section below
-or in the official specification at http://www.specnext.com/sprites/.
+3. Read about how hardware sprites work in the "Hardware Sprites" section below
+or in the official specification at https://wiki.specnext.dev/Sprites.
 
-5. Familiarize yourself with the zxnext_sprite.h API.
+4. Familiarize yourself with the zxnext_sprite.h API.
 
-6. Include zxnext_sprite.h in your program and start creating sprites.
+5. Include zxnext_sprite.h in your program and start creating sprites.
 
-7. Compile your program with z88dk and link it with the appropriate version of
+6. Compile your program with z88dk and link it with the appropriate version of
 zxnext_sprite.lib.
 
-8. Run your program in the ZEsarUX or CSpect emulator.
+7. Run your program in the ZEsarUX or CSpect emulator or on a real Spectrum Next.
 
 **Tip:** See the [demo](demo) folder for a simple example of how to use
 zxnext_sprite.h and link with zxnext_sprite.lib.
@@ -102,11 +118,11 @@ If you want to build the zxnext_sprite libraries yourself, follow the steps belo
 set of Unix commands to your path.
 
 2. Install the latest version of [z88dk](https://github.com/z88dk/z88dk) and add
-it to your path.
+it to your path. Prebuilt nightly builds for Windows, macOS and Linux are
+available at http://nightly.z88dk.org/.
 
 3. Download the zxnext_sprite repository either as a ZIP archive using the
-"Clone or download" button at the top of this page or with Git using the
-following command:
+"Code" button at the top of this page or with Git using the following command:
 
 > git clone https://github.com/stefanbylund/zxnext_sprite.git
 
@@ -114,16 +130,28 @@ following command:
 
 > make all
 
+The libraries are created in the lib/sccz80, lib/sdcc_ix and lib/sdcc_iy
+directories. Enter **make distro** to create the distribution archives in the
+build directory.
+
+The GitHub Actions workflow in
+[.github/workflows/build.yml](.github/workflows/build.yml) builds the library
+and demo with the latest z88dk nightly on every push and pull request.
+
 ## Hardware Sprites
 
-The Spectrum Next provides 64 hardware sprites numbered from 0 to 63.
-Each sprite is 16 * 16 pixels where each pixel is an 8-bit index between
-0 and 255 into a 256-colour sprite palette. The sprite pixels are laid out
-linearly from left to right and top to bottom.
+The Spectrum Next provides 128 hardware sprites numbered from 0 to 127.
+Each sprite is 16 * 16 pixels and uses either an 8-bit sprite pattern (256
+bytes, one byte per pixel) or a 4-bit sprite pattern (128 bytes, two pixels
+per byte). The pixel value is an index into a 256-colour sprite palette. The
+sprite pixels are laid out linearly from left to right and top to bottom. The
+16 KB sprite pattern memory holds 64 8-bit patterns or 128 4-bit patterns or
+any mix of the two; 4-bit pattern 2n is the first half of 8-bit pattern n and
+4-bit pattern 2n+1 is the second half.
 
 The sprite palette consists of 256 9-bit RGB333 colour values, i.e. the total
 number of colours is 512. There are actually two sprite palettes, which one
-is currently used for diplaying the sprites can be selected at runtime. The
+is currently used for displaying the sprites can be selected at runtime. The
 colour encoding of the sprite palette is the same as for the palette of the
 ULA and layer 2 screens.
 
@@ -134,21 +162,26 @@ palette index 255 contains colour 255. The effective palette colours will be
 9-bit RGB333 colours where the lower blue bit is an OR between bit 1 and bit
 0 in the 8-bit RGB332 colours.
 
-One colour is defined as the global transparency colour. This colour is an
-8-bit RGB332 colour value so the transparency is compared only with the 8
-most significant bits of the 9-bit RGB333 colours in the sprite palette. This
-means that two of the 512 possible RGB333 colours will be transparent. By
-default, the global transparency colour is set to the pink colour 0xE3 (227).
+One palette index is defined as the sprite transparency index. A sprite pixel
+whose pattern value equals the transparency index is not drawn. By default,
+the sprite transparency index is 0xE3 (227), which with the default palette is
+the pink colour 0xE3. For 4-bit patterns only the low 4 bits of the
+transparency index are used, i.e. 0x3 by default. The sprite transparency
+index is separate from the global transparency colour used by the ULA and
+layer 2 screens.
 
 Tip: If you're drawing your sprites in a general-purpose paint program, it's
-good to know that the default global transparency colour 0xE3 corresponds to
-the 24-bit RGB colour 0xE000C0 (224, 0, 192).
+good to know that the default transparency colour 0xE3 corresponds to the
+24-bit RGB colour 0xE000C0 (224, 0, 192).
 
 Sprites can optionally be rendered on the border of the screen. The coordinate
 system of the sprites therefore includes the border, which is 32 pixels, and
 the total sprite resolution is thus 320 * 256 pixels. The standard screen
-resolution is 256 * 192 pixels. This means that if sprites is not rendered on
-the border, the sprite coordinates range from (32, 32) to (287, 223).
+resolution is 256 * 192 pixels. This means that if sprites are not rendered on
+the border, the sprite coordinates range from (32, 32) to (287, 223). The x
+coordinate is 9 bits (0 - 511) and the y coordinate is 8 bits (0 - 255) or,
+for sprites with extended attributes, 9 bits (0 - 511). Both axes wrap at 512.
+A clip window can be set to limit the area where the sprites are visible.
 
 For convenience, there is an extended version of the set_sprite_attributes()
 function, for setting the sprite position, called set_sprite_attributes_ext(),
@@ -158,17 +191,34 @@ is convenient if you prefer to work in screen coordinates and don't want to
 render the sprites on the border area.
 
 When using the sprites there is a differentiation between the actual sprites
-and the sprite pattern (i.e. the sprite bitmap) used by the sprites. There
-are 64 sprites and 64 sprite patterns. The sprite patterns are defined
-independently of the sprites and are referenced by the sprites. This means
-that multiple sprites can share the same sprite pattern.
+and the sprite pattern (i.e. the sprite bitmap) used by the sprites. The
+sprite patterns are defined independently of the sprites and are referenced
+by the sprites. This means that multiple sprites can share the same sprite
+pattern.
 
-The sprite pattern is set for the currently selected sprite pattern slot
-(0 - 63). The attributes of a sprite is set for the currently selected sprite
-slot (0 - 63). The sprite attributes determine which sprite pattern the sprite
+The sprite pattern is set for the currently selected sprite pattern slot.
+The attributes of a sprite is set for the currently selected sprite slot
+(0 - 127). The sprite attributes determine which sprite pattern the sprite
 should use, the x and y position of the sprite, an optional sprite palette
 offset, a bit-mask of flags for sprite mirroring and rotation, and whether or
 not the sprite should be visible.
+
+A sprite is described by either 4 or 5 attribute bytes. The original 4-byte
+attributes, set with set_sprite_attributes(), describe an unscaled sprite with
+an 8-bit pattern and work on all core versions. The 5-byte extended attributes,
+set with set_extended_sprite_attributes() and set_relative_sprite_attributes(),
+add scaling by 2x, 4x or 8x in each direction, 4-bit patterns, a 9-bit y
+coordinate and relative sprites.
+
+A relative sprite is grouped with the closest preceding anchor sprite (a sprite
+with extended attributes that is not itself relative) and its coordinates are
+signed offsets from the anchor sprite's position, so moving the anchor moves
+the whole group. The anchor decides whether the group is composite, where each
+relative sprite keeps its own scaling, mirroring and rotation, or unified, where
+the group is scaled, mirrored and rotated as if it was a single big sprite. A
+relative sprite can optionally add the anchor's palette offset and pattern
+number to its own, which makes it easy to recolour or animate the whole group
+by changing only the anchor.
 
 If the optional sprite palette offset (0 - 15) is used when setting the
 attributes of a sprite, it is added to the 4 most significant bits of each
@@ -184,11 +234,13 @@ palette offset 2). When the palette offset is added to a sub-palette number,
 the addition is actually done in modulo 16. For example, adding palette
 offset 5 to sub-palette number 13 gives sub-palette number 2. If used, the
 palette offset is an efficient way of displaying the same sprite pattern in
-different colours.
+different colours. For 4-bit patterns, the 4-bit pixel value is the index
+within the sub-palette and the palette offset selects the sub-palette.
 
 The priority between the sprites is determined by the sprite slot number.
-Sprite 0 has the lowest priority and sprite 63 has the highest priority.
-A sprite with a higher priority is drawn over a sprite with lower priority.
+By default, sprite 0 has the lowest priority and sprite 127 has the highest
+priority, i.e. a sprite with a higher slot number is drawn over a sprite with
+a lower slot number. This order can be flipped with set_sprite_priority().
 The layer priority between the sprites and the layer 2 and ULA screens is
 configurable, the default priority is sprites over layer 2 screen over ULA
 screen.
@@ -199,9 +251,15 @@ in the same position on the screen. The sprite system only informs whether a
 sprite collision has occurred or not, which sprites has actually collided must
 be determined in software.
 
+The sprite hardware can draw at least 100 unscaled sprites per scanline. If
+that limit is exceeded, the remaining sprites on that scanline are not drawn
+and a flag is set that can be read with get_sprite_system_state().
+
 ## Known Problems
 
-None.
+* A z88dk library can only be linked with the z88dk version it was built with.
+If the linker reports a wrong library version, rebuild the library with your
+z88dk installation using **make all**.
 
 ## License
 
