@@ -1,4 +1,8 @@
 lib/
 bin/
+tmp/
 zcc_opt.def
 zcc_proj.lst
+*.lis
+*.map
+.DS_Store

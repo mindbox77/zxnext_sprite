@@ -14,16 +14,25 @@ CP := cp -r
 ZIP := zip -r -q
 
 SRCS := src/set_sprite_layers_system.c \
+src/set_sprite_priority.c \
+src/set_sprite_border_clipping.c \
+src/set_sprite_clip_window.c \
 src/get_sprite_system_state.c \
 src/set_sprite_display_palette.c \
 src/set_sprite_rw_palette.c \
 src/set_sprite_palette.c \
 src/reset_sprite_palette.c \
 src/set_sprite_slot.c \
+src/set_sprite_pattern_slot_4bit.c \
 src/set_sprite_pattern.c \
+src/set_sprite_pattern_4bit.c \
 src/set_sprite_attributes.c \
 src/set_sprite_attributes_ext.c \
+src/set_extended_sprite_attributes.c \
+src/set_relative_sprite_attributes.c \
+src/set_sprite_attribute.c \
 src/load_sprite_patterns.c \
+src/load_sprite_patterns_4bit.c \
 src/load_sprite_palette.c
 
 LIBDIR_SCCZ80 := lib/sccz80

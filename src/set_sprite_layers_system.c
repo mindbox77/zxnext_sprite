@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <arch/zxn.h>
 #include "zxnext_sprite.h"
+#include "sprite_defs.h"
 
 #define LAYER_PRIORITIES_MASK  0x07
 #define LAYER_PRIORITIES_SHIFT 2
@@ -34,6 +35,7 @@ void set_sprite_layers_system(bool sprites_visible,
         value = value | RSLS_ENABLE_LORES;
     }
 
+    /* Preserve the sprite priority and border clipping bits. */
     IO_NEXTREG_REG = REG_SPRITE_LAYER_SYSTEM;
-    IO_NEXTREG_DAT = value;
+    IO_NEXTREG_DAT = value | (IO_NEXTREG_DAT & RSLS_PRESERVED_MASK);
 }

@@ -1,14 +1,14 @@
 /*******************************************************************************
  * Stefan Bylund 2017
  *
- * Implementation of get_sprite_system_state() in zxnext_sprite.h.
+ * Implementation of set_sprite_pattern_4bit() in zxnext_sprite.h.
  ******************************************************************************/
 
-#include <stdint.h>
+#include <intrinsic.h>
 #include <arch/zxn.h>
 #include "zxnext_sprite.h"
 
-uint8_t get_sprite_system_state(void)
+void set_sprite_pattern_4bit(const void *sprite_pattern)
 {
-    return IO_SPRITE_FLAGS;
+    intrinsic_outi((void *) sprite_pattern, __IO_SPRITE_PATTERN, 128);
 }
