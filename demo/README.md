@@ -4,8 +4,20 @@ This folder contains a simple example program demonstrating how to use the
 [zxnext_sprite](https://github.com/stefanbylund/zxnext_sprite) C hardware sprite
 API for the ZX Spectrum Next.
 
-**Note:** This demo still works but is a bit out-of-date. It will be updated
-someday when I have the time ;)
+![zxnext_sprite demo](zxnext_sprite_demo.png)
+
+The demo shows:
+
+* A plain 8-bit sprite using the original 4-byte attributes (bouncing).
+* The same pattern scaled 2x and mirrored using extended attributes (bouncing).
+* A 4-bit version of the pattern shown twice with different palette offsets
+  (top-left and top-right corners).
+* A unified big sprite made of an anchor sprite and a relative sprite, which
+  is rotated every 64 frames by rewriting a single attribute byte via the Next
+  register interface (bouncing).
+* A sprite clip window that hides the sprites 8 pixels from the screen edges.
+
+Press any key to exit the demo.
 
 ## How to Build
 
@@ -17,12 +29,11 @@ If you want to build this demo program yourself, follow the steps below:
 set of Unix commands to your path.
 
 2. Install the latest version of [z88dk](https://github.com/z88dk/z88dk) and the
-[ZEsarUX](https://github.com/chernandezba/zesarux) or
-[CSpect](https://dailly.blogspot.se/) emulator.
+[ZEsarUX](https://github.com/chernandezba/zesarux/releases) or
+[CSpect](https://mdf200.itch.io/cspect) emulator.
 
 3. Download the zxnext_sprite repository either as a ZIP archive using the
-"Clone or download" button at the top of this page or with Git using the
-following command:
+"Code" button at the top of this page or with Git using the following command:
 
 > git clone https://github.com/stefanbylund/zxnext_sprite.git
 
@@ -37,7 +48,8 @@ build the demo program:
 > make all
 
 6. Run the zxnext_sprite/demo/bin/\<compiler-flavour\>/zxnext_sprite_demo.nex
-file in the ZEsarUX or CSpect emulator.
+file in the ZEsarUX or CSpect emulator or on a real Spectrum Next (core 3.0
+or later).
 
 **Tip:** If you don't care for makefiles or don't want to install
 MinGW/UnxUtils/Cygwin on Windows, you can build zxnext_sprite demo manually
